@@ -1,0 +1,9 @@
+{
+  "name": "xdnext",
+  "verbose": false,
+  "addr": ":9701",
+  "datavol": "/app/data",
+  "users" : "users.db",
+  "tasks" : "tasks.db",
+  "loglevel": "debug"
+}

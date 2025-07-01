@@ -1,0 +1,30 @@
+{
+  "name": "wui",
+  "datadir": "/app/data",
+  "subdirs": [
+    "logs",
+    "models",
+    "files",
+    "mcp",
+    "vectordb"
+  ],
+  "loglevel": "DEBUG",
+  "qdrant": {
+    "host": "localhost",
+    "port": 46333,
+    "index": "xdnext"
+  },
+  "ollama": {
+    "host": "localhost",
+    "port": 11434,
+    "model": "mistral:latest"
+  },
+  "keys" : {
+    "OpenAI" : "sk-",
+    "Google" : "",
+    "Anthropic" : ""
+  },
+  "mcp": {
+    "filename": "~/.config/mcphub/servers.json"
+  }
+}
