@@ -18,11 +18,17 @@ $(WUNDERK_IMAGE):
 run: $(DATAVOL)
 	$(DOCKER) run -tid -p 9701:9701 -p 9702:9702 \
 		-v $(DATAVOL):/app/data -v ./wui:/app/wui \
+		-v $(DATAVOL)/config/wunderk:/app/config \
 		--name $(WUNDERK_CTR) $(WUNDERK_IMAGE)
 
 $(DATAVOL):
-	mkdir -p $(DATAVOL)
-	mkdir -p $(DATAVOL)/models
+	if [ -f $(DATAVOL) ]; then \
+		echo "Data volume already exists."; \
+	else \
+		echo "Creating data volume..."; \
+		mkdir -p $(DATAVOL); \
+		mkdir -p $(DATAVOL)/models; \
+	fi 	
 
 stop:
 	$(DOCKER) stop $(WUNDERK_CTR)
@@ -40,10 +46,14 @@ rmi:
 clean:
 	rm -rf $(DATAVOL)
 
+save: 
+	@echo "Saving the current state of the data volume..."
+	@docker commit $(WUNDERK_CTR) $(WUNDERK_IMAGE):$(WUNDERK_VERSION)
+
 # Publish to the registry at Github
 publish:
-	@docker tag $(WUNDERK_IMAGE):$(WUNDERK_VERSION) ghcr.io/xenocloud/$(WUNDERK_IMAGE):$(WUNDERK_VERSION)
-	@docker push ghcr.io/xenocloud/$(WUNDERK_IMAGE):$(WUNDERK_VERSION)
+	@docker tag $(WUNDERK_IMAGE):$(WUNDERK_VERSION) ghcr.io/nacharya/$(WUNDERK_IMAGE):$(WUNDERK_VERSION)
+	@docker push ghcr.io/nacharya/$(WUNDERK_IMAGE):$(WUNDERK_VERSION)
 
 test:
 	- ./test.sh 

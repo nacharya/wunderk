@@ -1,11 +1,12 @@
 import streamlit as st
-import os
-import pandas as pd
 from common.config import ConfigInit
 from common.vectordb import VectorDB
 from common.mcp import MCPConfig
-
+from common.files import Directory
+import requests
+import json
 from loguru import logger
+import pandas as pd
 
 # st.set_page_config(
 #    page_title="Settings",
@@ -71,9 +72,98 @@ def tab_data(config):
     subdir_check = st.checkbox("Subdirectories")
     if subdir_check:
         subdir_ctr = st.container()
-        config["subdirs"] = subdir_ctr.text_input(
-            "Subdirectories", value=config["subdirs"]
+        dirc = Directory(config["datadir"], "")
+        subdirs = dirc.subdirs()
+        selected_subdirs = subdir_ctr.multiselect(
+            "",
+            options=subdirs,
+            default=subdirs,
         )
+        config["subdirs"] = selected_subdirs
+
+
+def tab_ollama(config):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        host_config = st.text_input("OllamaHost", value=config["ollama"]["host"])
+        config["ollama"]["host"] = host_config
+    with col2:
+        port_config = st.number_input(
+            "OllamaPort", value=config["ollama"]["port"], step=1
+        )
+        config["ollama"]["port"] = port_config
+    with col3:
+        model_config = st.text_input("OllamaModel", value=config["ollama"]["model"])
+        config["ollama"]["model"] = model_config
+    dashboard = st.checkbox("Ollama Dashboard")
+    if dashboard:
+        dcol1, dcol2 = st.columns(2)
+        with dcol1:
+            command = dcol1.selectbox(
+                "Ollama Command",
+                ["list", "pull", "delete", "info"],
+            )
+            if command == "list":
+                request_url = f"http://{config['ollama']['host']}:{config['ollama']['port']}/api/tags"
+                response = requests.get(request_url)
+                if response.status_code == 200:
+                    models = response.json()["models"]
+                    # st.write("Available Models:")
+                    # st.json(models)
+                    for model in models:
+                        st.write(f"- {model['name']}")
+
+            elif command == "pull":
+                model_name = dcol1.text_input("Model Name to Pull")
+                if dcol1.button("Pull Model"):
+                    st.write(f"Pulling model: {model_name}")
+                    request_url = f"http://{config['ollama']['host']}:{config['ollama']['port']}/api/pull"
+                    headers = {"Content-Type": "application/json"}
+                    mname = {"model": model_name}
+                    response = requests.post(
+                        request_url, headers=headers, data=json.dumps(mname)
+                    )
+                    if response.status_code == 200:
+                        st.success(f"Model {model_name} pulled successfully")
+                    else:
+                        st.error(
+                            f"Error pulling model {model_name}: {response.status_code}"
+                        )
+            elif command == "delete":
+                model_name = dcol1.text_input("Model Name to Delete")
+                if dcol1.button("Delete Model"):
+                    st.write(f"Deleting model: {model_name}")
+                    request_url = f"http://{config['ollama']['host']}:{config['ollama']['port']}/api/delete"
+                    headers = {"Content-Type": "application/json"}
+                    mname = {"model": model_name}
+                    response = requests.delete(
+                        request_url, headers=headers, data=json.dumps(mname)
+                    )
+                    if response.status_code == 200:
+                        st.success(f"Model {model_name} deleted successfully")
+                    else:
+                        st.error(
+                            f"Error deleting model {model_name}: {response.status_code}"
+                        )
+            elif command == "info":
+                model_name = dcol1.text_input("Model Name to Get Info")
+                if dcol1.button("Get Model Info"):
+                    request_url = f"http://{config['ollama']['host']}:{config['ollama']['port']}/api/show"
+                    headers = {"Content-Type": "application/json"}
+                    mname = {"model": model_name}
+                    response = requests.post(
+                        request_url, headers=headers, data=json.dumps(mname)
+                    )
+                    if response.status_code == 200:
+                        fullmodel_info = response.json()
+                        model_info = fullmodel_info.get("model_info", {})
+                        # st.write("Model Info:", model_info)
+                        df = pd.DataFrame.from_dict(
+                            model_info, orient="index"
+                        ).reset_index()
+                        st.dataframe(df)
+                    else:
+                        st.error(f"Error fetching model info: {response.status_code}")
 
 
 def tab_vector(config):
@@ -169,7 +259,7 @@ class MCPInstance:
 
     def view_ro(self):
         """Display MCP instance details in a box."""
-        logger.debug(f"Viewing MCP instance: {self.name}")
+        # logger.debug(f"Viewing MCP instance: {self.name}")
         with st.expander(f"**MCP Instance: {self.name}**", expanded=True):
             st.text_input("type", self.mcp_instance.type, disabled=True)
             st.text_input("command", self.mcp_instance.command, disabled=True)
@@ -295,9 +385,13 @@ class MCPInstance:
 
 
 def SettingsMain(config):
-    main_tab, vector_tab, mcp_tab = st.tabs(["Data", "VectorDB", "MCP"])
+    main_tab, ollama_tab, vector_tab, mcp_tab = st.tabs(
+        ["Data", "Models", "VectorDB", "MCP"]
+    )
     with main_tab:
         tab_data(config)
+    with ollama_tab:
+        tab_ollama(config)
     with vector_tab:
         tab_vector(config)
     with mcp_tab:

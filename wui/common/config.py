@@ -30,7 +30,7 @@ class Config:
 
 
 def ConfigInit(name):
-    filename = "/app/wui/wui.json"
+    filename = "/app/config/wunderk/wui.json"
     if not os.path.exists(filename):
         filename = os.path.expanduser("~/.config/wui/wui.json")
         if not os.path.exists(os.path.expanduser(filename)):
@@ -38,9 +38,12 @@ def ConfigInit(name):
             os.system("cp wui.json ~/.config/wui/wui.json")
     else:
         filename = os.path.expanduser(filename)
-    print("Config " + filename)
-    print("HOME: " + str(Path.home()))
     cfg = Config(filename)
+    keys = cfg.getv("keys")
+    keys["OpenAI"] = os.getenv("OPENAI_API_KEY")
+    keys["Google"] = os.getenv("GOOGLE_API_KEY")
+    keys["Anthropic"] = os.getenv("ANTHROPIC_API_KEY")
+    cfg.setv("keys", keys)
     loglevel = cfg.getv("loglevel")
     logger.add(sys.stderr, format="{time} {level} {message}", level=loglevel)
     logger.add(f"{name}.log")

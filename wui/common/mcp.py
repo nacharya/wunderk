@@ -115,7 +115,7 @@ class MCPConfig:
 
     def validate_config(self):
         required_keys = ["mcpServers", "nativeMCPServers"]
-        logger.debug(f"{self.config.keys()}")
+        # logger.debug(f"{self.config.keys()}")
         for key in required_keys:
             if not self.config.get(key):
                 raise KeyError(
@@ -124,7 +124,7 @@ class MCPConfig:
 
     def get_mcp_names(self):
         mlist = list(self.config.get("mcpServers", {}).keys())
-        logger.debug(f"Available MCP instances: {mlist}")
+        # logger.debug(f"Available MCP instances: {mlist}")
         return mlist
 
     def get_mcp_instance(self, name):

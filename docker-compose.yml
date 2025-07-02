@@ -1,0 +1,49 @@
+#version: '3.9'
+
+networks:
+  wundernet:
+    external: true
+
+services:
+  wunderk-streamlit:
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY} # from host environment
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # from host environment
+      - DATADIR=/app/data
+    image: wunderk:latest
+    container_name: wunderk-streamlit
+    ports:
+      - 9701:9701
+      - 9702:9702
+    volumes:
+      - ./.data:/app/data
+      - ./.data/config:/app/config
+      - ./wui:/app/wui
+    restart: always
+    tty: true
+    networks:
+      - wundernet
+
+  wunderk-ollama:
+    image: ollama/ollama:latest
+    container_name: wunderk-ollama
+    ports:
+      - 11434:11434
+    restart: always
+    tty: true
+    volumes:
+      - ./.data/ollama:/root/.ollama
+    networks:
+      - wundernet
+
+  wunderk-qdrant:
+    image: qdrant/qdrant:latest
+    container_name: wunderk-qdrant
+    ports:
+      - 6333:6333
+    restart: always
+    tty: true
+    volumes:
+      - ./.data/qdrant:/qdrant/storage
+    networks:
+      - wundernet
